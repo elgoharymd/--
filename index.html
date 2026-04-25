@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Crypto Vault | تشفير احترافي</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000000;
+            font-family: -apple-system, 'SF Pro Text', 'Segoe UI', 'Tajawal', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+ justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .vault-container {
+            max-width: 780px;
+            width: 100%;
+            background: rgba(20, 20, 25, 0.92);
+            backdrop-filter: blur(40px);
+            border-radius: 44px;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
+            overflow: hidden;
+            padding: 24px 28px 32px;
+        }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; flex-wrap: wrap; }
+        .title-section h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, #ffffff, #8e8e93); background-clip: text; -webkit-background-clip: text; color: transparent; display: flex; align-items: center; gap: 10px; }
+        .title-section h1 i { background: linear-gradient(135deg, #0a84ff, #34c759); background-clip: text; -webkit-background-clip: text; color: transparent; font-size: 32px; }
+        .title-section p { color: #8e8e93; font-size: 13px; margin-top: 6px; }
+        .title-section p i { margin-left: 6px; }
+        .status-badge { background: rgba(48, 48, 55, 0.7); padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 500; color: #34c759; backdrop-filter: blur(10px); }
+        .status-badge i { margin-left: 6px; }
+        .segmented { display: flex; background: rgba(120, 120, 128, 0.16); border-radius: 10px; padding: 2px; margin-bottom: 28px; }
+        .seg-item { flex: 1; text-align: center; padding: 10px 0; font-weight: 590; font-size: 15px; color: #8e8e93; cursor: pointer; border-radius: 8px; transition: all 0.2s; background: transparent; border: none; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .seg-item i { font-size: 16px; }
+        .seg-item.active { background: #2c2c2e; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .input-group { margin-bottom: 20px; }
+        .input-label { font-size: 13px; font-weight: 600; color: #8e8e93; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .input-label i { font-size: 12px; color: #0a84ff; }
+        textarea, input[type="password"], input[type="text"] { width: 100%; padding: 14px 16px; background: #1c1c1e; border: 0.5px solid #3a3a3c; border-radius: 14px; color: white; font-size: 16px; font-family: 'SF Mono', monospace; transition: all 0.2s; outline: none; resize: vertical; }
+        textarea:focus, input:focus { border-color: #0a84ff; }
+        .file-upload-area { position: relative; width: 100%; min-height: 160px; background: rgba(28, 28, 30, 0.8); border: 1.5px dashed rgba(138, 138, 143, 0.5); border-radius: 24px; transition: all 0.25s; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+        .file-upload-area:hover { border-color: #0a84ff; background: rgba(28, 28, 30, 0.95); transform: scale(0.99); }
+        .file-upload-area.drag-over { border-color: #34c759; background: rgba(52, 199, 89, 0.1); border-style: solid; }
+        .upload-icon { font-size: 48px; color: #0a84ff; transition: all 0.2s; }
+        .file-upload-area:hover .upload-icon { transform: translateY(-2px); }
+        .upload-text { font-size: 15px; font-weight: 500; color: #e5e5ea; text-align: center; }
+        .upload-subtext { font-size: 12px; color: #8e8e93; text-align: center; }
+        .upload-button { background: #0a84ff; color: white; border: none; border-radius: 30px; padding: 8px 20px; font-size: 14px; font-weight: 590; cursor: pointer; margin-top: 8px; font-family: inherit; display: flex; align-items: center; gap: 8px; }
+        .upload-button i { font-size: 14px; }
+        .upload-button:active { transform: scale(0.96); }
+        #fileInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
+        .key-row { display: flex; gap: 12px; align-items: center; }
+        .key-row input { flex: 3; }
+        .icon-btn { background: #2c2c2e; border: none; border-radius: 14px; padding: 0 18px; height: 50px; color: #0a84ff; font-weight: 590; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .icon-btn i { font-size: 16px; }
+        .icon-btn:active { opacity: 0.7; transform: scale(0.97); }
+        .action-row { display: flex; gap: 14px; margin: 28px 0 24px; }
+        .action-btn { flex: 1; padding: 14px; border-radius: 14px; font-weight: 600; font-size: 17px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .encrypt-btn { background: #0a84ff; color: white; box-shadow: 0 2px 8px rgba(10,132,255,0.3); }
+        .decrypt-btn { background: #2c2c2e; color: #0a84ff; }
+        .action-btn:active { opacity: 0.8; transform: scale(0.98); }
+        .file-info-panel { background: #1c1c1e; border-radius: 18px; padding: 16px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; border: 0.5px solid #3a3a3c; }
+        .file-info-content { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .file-icon { font-size: 32px; color: #0a84ff; }
+        .file-details { flex: 1; }
+        .file-name { color: #e5e5ea; font-family: monospace; font-size: 13px; }
+        .file-meta { color: #8e8e93; font-size: 11px; margin-top: 4px; }
+        .small-clear { background: #3a3a3c; padding: 8px 16px; border-radius: 30px; border: none; color: #ff453a; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .small-clear i { font-size: 12px; }
+        .small-clear:hover { background: #4a4a4c; }
+        .result-console { background: #0c0c0d; border-radius: 18px; padding: 18px; margin-top: 18px; border: 0.5px solid #2c2c2e; font-family: 'SF Mono', monospace; font-size: 12px; word-break: break-word; max-height: 260px; overflow: auto; color: #d9d9e3; }
+        .result-console i { margin-left: 8px; }
+        .hidden-panel { display: none; }
+        .footer-note { font-size: 11px; color: #636366; text-align: center; margin-top: 24px; }
+        .footer-note i { margin-left: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="vault-container">
+    <div class="header">
+        <div class="title-section">
+            <h1><i class="fas fa-shield-halbed"></i> EX</h1>
+            <p><i class="fas fa-lock"></i> تشفير AES-256 | حماية عسكرية</p>
+        </div>
+        <div class="status-badge"><i class="fas fa-check-circle"></i> EX:Moaz elgoharyX</div>
+    </div>
+
+    <div class="segmented">
+        <button class="seg-item active" data-mode="text"><i class="fas fa-paragraph"></i> النصوص</button>
+        <button class="seg-item" data-mode="file"><i class="fas fa-folder"></i> الملفات</button>
+    </div>
+
+    <div id="textPanel">
+        <div class="input-group">
+            <div class="input-label"><i class="fas fa-edit"></i> المحتوى</div>
+            <textarea id="textInput" rows="4" placeholder="أدخل النص العادي أو المشفر هنا..."></textarea>
+        </div>
+    </div>
+
+    <div id="filePanel" class="hidden-panel">
+        <div class="input-group">
+            <div class="input-label"><i class="fas fa-cloud-upload-alt"></i> رفع الملف</div>
+            <div class="file-upload-area" id="fileUploadArea">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <div class="upload-text">اسحب ملفك هنا أو اضغط للاختيار</div>
+                <div class="upload-subtext"><i class="fas fa-database"></i> يدعم جميع أنواع الملفات حتى 50MB</div>
+                <button type="button" class="upload-button" id="triggerFileInput"><i class="fas fa-folder-open"></i> اختيار من الجهاز</button>
+                <input type="file" id="fileInput" accept="*/*">
+            </div>
+        </div>
+        <div id="fileMeta" class="file-info-panel" style="display: none;">
+            <div class="file-info-content">
+                <i class="fas fa-file-alt file-icon"></i>
+                <div class="file-details">
+                    <div class="file-name" id="displayFileName">—</div>
+                    <div class="file-meta" id="displayFileMeta">—</div>
+                </div>
+            </div>
+            <button id="clearFileBtn" class="small-clear"><i class="fas fa-trash"></i> مسح</button>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <div class="input-label"><i class="fas fa-key"></i> مفتاح التشفير (كلمة السر)</div>
+        <div class="key-row">
+            <input type="password" id="secretPassword" placeholder="مفتاح قوي 6 أحرف أو أكثر">
+            <button id="randomPasswordBtn" class="icon-btn"><i class="fas fa-dice-d6"></i> عشوائي</button>
+        </div>
+    </div>
+
+    <div class="action-row">
+        <button id="encryptAction" class="action-btn encrypt-btn"><i class="fas fa-lock"></i> تشفير</button>
+        <button id="decryptAction" class="action-btn decrypt-btn"><i class="fas fa-unlock-alt"></i> فك التشفير</button>
+    </div>
+
+    <div class="result-console" id="outputDisplay">
+        <i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ النظام جاهز. اختر وضعاً وأدخل المفتاح.
+    </div>
+    <div class="footer-note">
+        <i class="fas fa-microchip"></i> AES-256-CBC | PBKDF2-100000 | HMAC-SHA256 <i class="fas fa-shield-alt"></i> EX:Moaz elgoharyX
+    </div>
+</div>
+
+<script>
+    (function() {
+        // الثوابت
+        const ITERATIONS = 100000;
+        const KEY_SIZE = 256 / 32;
+        const MAGIC = "VAULT_MOAZ_2026";
+        
+        // دالة اشتقاق المفتاح
+        function deriveKey(password, salt) {
+            return CryptoJS.PBKDF2(password, salt, {
+                keySize: KEY_SIZE,
+                iterations: ITERATIONS,
+                hasher: CryptoJS.algo.SHA256
+            });
+        }
+        
+        // دالة تشفير قوية
+        function encryptData(plainText, password) {
+            if (!password || password.length < 6) {
+                throw new Error("كلمة السر يجب أن تكون 6 أحرف على الأقل");
+            }
+            
+            // إضافة البصمة
+            const dataWithMagic = MAGIC + "|" + plainText + "|" + MAGIC;
+            
+            // توليد ملح ومتجه تهيئة
+            const salt = CryptoJS.lib.WordArray.random(32);
+            const iv = CryptoJS.lib.WordArray.random(16);
+            
+            // استنتاج المفتاح
+            const key = deriveKey(password, salt);
+            
+            // تشفير AES-256
+            const encrypted = CryptoJS.AES.encrypt(dataWithMagic, key, {
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            
+            // إنشاء HMAC
+            const payload = salt.toString(CryptoJS.enc.Base64) + ":" + 
+                           iv.toString(CryptoJS.enc.Base64) + ":" + 
+                           encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+            const hmac = CryptoJS.HmacSHA256(payload, password).toString(CryptoJS.enc.Base64);
+            
+            // تجميع النتيجة
+            const result = {
+                v: 2,
+                s: salt.toString(CryptoJS.enc.Base64),
+                i: iv.toString(CryptoJS.enc.Base64),
+                d: encrypted.ciphertext.toString(CryptoJS.enc.Base64),
+                h: hmac
+            };
+            
+            return JSON.stringify(result);
+        }
+        
+        // دالة فك التشفير
+        function decryptData(encryptedPackage, password) {
+            if (!password) {
+                throw new Error("كلمة السر مطلوبة");
+            }
+            
+            let data;
+            try {
+                data = JSON.parse(encryptedPackage);
+                if (!data.s || !data.i || !data.d || !data.h) {
+                    throw new Error("تنسيق غير صالح");
+                }
+            } catch(e) {
+                throw new Error("البيانات تالفة أو غير متوافقة مع هذا البرنامج");
+            }
+            
+            // التحقق من HMAC
+            const payload = data.s + ":" + data.i + ":" + data.d;
+            const expectedHmac = CryptoJS.HmacSHA256(payload, password).toString(CryptoJS.enc.Base64);
+            
+            if (expectedHmac !== data.h) {
+                throw new Error("كلمة السر غير صحيحة أو البيانات تالفة");
+            }
+            
+            // استعادة المكونات
+            const salt = CryptoJS.enc.Base64.parse(data.s);
+            const iv = CryptoJS.enc.Base64.parse(data.i);
+            const key = deriveKey(password, salt);
+            
+            // فك التشفير
+            const decrypted = CryptoJS.AES.decrypt(data.d, key, {
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            
+            const resultText = decrypted.toString(CryptoJS.enc.Utf8);
+            
+            if (!resultText) {
+                throw new Error("فك التشفير فشل - كلمة السر غير صحيحة");
+            }
+            
+            // التحقق من البصمة
+            if (!resultText.startsWith(MAGIC + "|") || !resultText.endsWith("|" + MAGIC)) {
+                throw new Error("هذا الملف لم يتم تشفيره بواسطة هذا البرنامج");
+            }
+            
+            // استخراج النص الأصلي
+            const originalText = resultText.substring(
+                (MAGIC + "|").length, 
+                resultText.length - (("|" + MAGIC).length)
+            );
+            
+            return originalText;
+        }
+        
+        // معالجة الملفات
+        async function processFileEncrypt(file, password) {
+            return new Promise((resolve, reject) => {
+                if (!file) reject(new Error("لا يوجد ملف"));
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        const encrypted = encryptData(content, password);
+                        const blob = new Blob([encrypted], {type: 'application/octet-stream'});
+                        const url = URL.createObjectURL(blob);
+                        resolve({ url, filename: file.name + ".crypt" });
+                    } catch(err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error("خطأ في قراءة الملف"));
+                reader.readAsText(file, "UTF-8");
+            });
+        }
+        
+        async function processFileDecrypt(file, password) {
+            return new Promise((resolve, reject) => {
+                if (!file) reject(new Error("لا يوجد ملف مشفر"));
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const encryptedData = e.target.result;
+                        const decrypted = decryptData(encryptedData, password);
+                        let outName = file.name;
+                        if (outName.endsWith(".crypt")) outName = outName.slice(0, -6);
+                        else outName = "decrypted_" + outName;
+                        const blob = new Blob([decrypted], {type: 'application/octet-stream'});
+                        const url = URL.createObjectURL(blob);
+                        resolve({ url, filename: outName });
+                    } catch(err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error("فشل قراءة الملف"));
+                reader.readAsText(file, "UTF-8");
+            });
+        }
+        
+        function downloadFile(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // عناصر الواجهة
+        const textModeBtn = document.querySelector('[data-mode="text"]');
+        const fileModeBtn = document.querySelector('[data-mode="file"]');
+        const textPanelDiv = document.getElementById('textPanel');
+        const filePanelDiv = document.getElementById('filePanel');
+        const textInputArea = document.getElementById('textInput');
+        const fileInputEl = document.getElementById('fileInput');
+        const fileMetaDiv = document.getElementById('fileMeta');
+        const displayFileName = document.getElementById('displayFileName');
+        const displayFileMeta = document.getElementById('displayFileMeta');
+        const clearFileBtn = document.getElementById('clearFileBtn');
+        const secretPassword = document.getElementById('secretPassword');
+        const randomBtn = document.getElementById('randomPasswordBtn');
+        const encryptBtn = document.getElementById('encryptAction');
+        const decryptBtn = document.getElementById('decryptAction');
+        const outputDiv = document.getElementById('outputDisplay');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const triggerFileBtn = document.getElementById('triggerFileInput');
+        
+        let currentSelectedFile = null;
+        let activeMode = "text";
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        function updateFileDisplay() {
+            if (currentSelectedFile) {
+                fileMetaDiv.style.display = 'flex';
+                displayFileName.textContent = currentSelectedFile.name;
+                displayFileMeta.textContent = `${formatFileSize(currentSelectedFile.size)} • ${currentSelectedFile.type || 'ملف'}`;
+            } else {
+                fileMetaDiv.style.display = 'none';
+            }
+        }
+        
+        function clearFile() {
+            currentSelectedFile = null;
+            fileInputEl.value = '';
+            updateFileDisplay();
+            outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم مسح الملف المحدد.';
+        }
+        
+        function handleFileSelect(file) {
+            if (file) {
+                currentSelectedFile = file;
+                updateFileDisplay();
+                outputDiv.innerHTML = `<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم اختيار الملف: ${file.name}`;
+            }
+        }
+        
+        fileInputEl.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFileSelect(e.target.files[0]);
+            } else {
+                clearFile();
+            }
+        });
+        
+        triggerFileBtn.addEventListener('click', () => {
+            fileInputEl.click();
+        });
+        
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('drag-over');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('drag-over');
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+                fileInputEl.files = files;
+            }
+        });
+        
+        clearFileBtn.addEventListener('click', clearFile);
+        
+        function updateModeUI(mode) {
+            activeMode = mode;
+            if (mode === "text") {
+                textPanelDiv.classList.remove("hidden-panel");
+                filePanelDiv.classList.add("hidden-panel");
+                textModeBtn.classList.add("active");
+                fileModeBtn.classList.remove("active");
+            } else {
+                textPanelDiv.classList.add("hidden-panel");
+                filePanelDiv.classList.remove("hidden-panel");
+                fileModeBtn.classList.add("active");
+                textModeBtn.classList.remove("active");
+            }
+            outputDiv.innerHTML = `<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم التبديل إلى وضع ${mode === "text" ? "النصوص" : "الملفات"}. أدخل المفتاح.`;
+        }
+        
+        textModeBtn.addEventListener('click', () => updateModeUI("text"));
+        fileModeBtn.addEventListener('click', () => updateModeUI("file"));
+        
+        randomBtn.addEventListener('click', () => {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()";
+            let key = "";
+            for(let i = 0; i < 28; i++) {
+                key += chars[Math.floor(Math.random() * chars.length)];
+            }
+            secretPassword.value = key;
+            outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم إنشاء مفتاح عشوائي قوي. احتفظ به بأمان.';
+        });
+        
+        async function onEncrypt() {
+            try {
+                const password = secretPassword.value;
+                if (!password) throw new Error("أدخل كلمة السر");
+                if (password.length < 6) throw new Error("كلمة السر يجب أن تكون 6 أحرف على الأقل");
+                
+                outputDiv.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> ⏳ جاري التشفير...';
+                
+                if (activeMode === "text") {
+                    const plain = textInputArea.value;
+                    if (!plain.trim()) throw new Error("أدخل النص المراد تشفيره");
+                    const encryptedResult = encryptData(plain, password);
+                    textInputArea.value = encryptedResult;
+                    outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم التشفير بنجاح.';
+                } 
+                else {
+                    if (!currentSelectedFile) throw new Error("اختر ملفًا أولاً");
+                    const result = await processFileEncrypt(currentSelectedFile, password);
+                    downloadFile(result.url, result.filename);
+                    outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم تشفير الملف وتحميله بنجاح.';
+                }
+            } catch(err) {
+                outputDiv.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #ff453a;"></i> ⚠️ فشل التشفير: ${err.message}`;
+            }
+        }
+        
+        async function onDecrypt() {
+            try {
+                const password = secretPassword.value;
+                if (!password) throw new Error("أدخل كلمة السر");
+                
+                outputDiv.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> ⏳ جاري فك التشفير...';
+                
+                if (activeMode === "text") {
+                    const cipherText = textInputArea.value;
+                    if (!cipherText.trim()) throw new Error("أدخل النص المشفر");
+                    const decryptedPlain = decryptData(cipherText, password);
+                    textInputArea.value = decryptedPlain;
+                    outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ فك التشفير ناجح.';
+                } 
+                else {
+                    if (!currentSelectedFile) throw new Error("اختر ملفًا مشفرًا");
+                    const result = await processFileDecrypt(currentSelectedFile, password);
+                    downloadFile(result.url, result.filename);
+                    outputDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #34c759;"></i> ✓ تم فك التشفير وتحميل الملف بنجاح.';
+                }
+            } catch(err) {
+                outputDiv.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #ff453a;"></i> ⚠️ فك التشفير فشل: ${err.message}`;
+            }
+        }
+        
+        encryptBtn.addEventListener('click', onEncrypt);
+        decryptBtn.addEventListener('click', onDecrypt);
+        
+        updateModeUI("text");
+        updateFileDisplay();
+    })();
+</script>
+</body>
+</html>
